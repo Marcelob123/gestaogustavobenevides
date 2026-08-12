@@ -1,0 +1,9 @@
+{
+  "name": "Gestão Pro",
+  "short_name": "Gestão Pro",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f8f9fa",
+  "theme_color": "#6200ea",
+  "orientation": "portrait"
+}
