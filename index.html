@@ -52,13 +52,17 @@
                     </div>
                 </div>
 
+                <button class="btn-primary" style="margin-bottom: 20px; background-color: #f39c12; color: #fff;" onclick="abrirModal('modalFrequencia')">
+                    <span class="material-icons">star</span> Ver Clientes Mais Frequentes
+                </button>
+
                 <div class="card relatorio-escrito">
                     <h2>Controle Financeiro</h2>
                     <p id="textoRelatorioMensal">Carregando relatório...</p>
                 </div>
             </section>
 
-            <!-- TELA 2: SERVIÇOS (CORTES + PRODUTOS) -->
+            <!-- TELA 2: SERVIÇOS -->
             <section id="screen-servicos" class="screen">
                 <div class="card">
                     <h2>Registrar Atendimento</h2>
@@ -78,16 +82,13 @@
                             <input type="number" id="valorServico" step="0.01" required placeholder="Valor do Serviço (R$)">
                         </div>
                         
-                        <h3 style="font-size: 0.9rem; color:#6c757d; margin: 15px 0 10px;">Consumiu algum produto? (Opcional)</h3>
-                        <div class="input-group">
-                            <span class="material-icons">local_drink</span>
-                            <select id="produtoServicoSelect">
-                                <option value="" selected>Nenhum produto</option>
-                            </select>
-                        </div>
-                        <div class="input-group">
-                            <span class="material-icons">tag</span>
-                            <input type="number" id="qtdProdutoServico" step="1" placeholder="Quantidade (Ex: 1)" value="1">
+                        <!-- Lista Dinâmica de Produtos no Corte -->
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px dashed #ccc;">
+                            <h3 style="font-size: 0.95rem; color:#2c3e50; margin-bottom: 10px;">Adicionar Produtos (Opcional)</h3>
+                            <div id="listaProdutosServico"></div>
+                            <button type="button" class="btn-manage" style="width: 100%; margin: 0; background: #e0e0e0; color: #333; justify-content: center;" onclick="adicionarLinhaProduto('servico')">
+                                <span class="material-icons" style="font-size: 18px; margin-right: 5px;">add_circle</span> Adicionar Produto
+                            </button>
                         </div>
 
                         <div class="input-group">
@@ -103,17 +104,16 @@
             <section id="screen-produtos" class="screen">
                 <div class="card">
                     <h2>Venda Avulsa (Balcão)</h2>
-                    <p style="font-size:0.8rem; color:#777; margin-bottom:15px;">Use apenas se a pessoa não cortou o cabelo.</p>
+                    <p style="font-size:0.8rem; color:#777; margin-bottom:15px;">Use se o cliente comprou produtos sem cortar o cabelo.</p>
                     <form id="formProduto">
-                        <div class="input-group">
-                            <span class="material-icons">shopping_bag</span>
-                            <select id="produtoSelect" required><option value="" disabled selected>Selecione o Produto</option></select>
-                            <button type="button" class="btn-manage" onclick="abrirModal('modalEstoque')"><span class="material-icons">settings</span></button>
-                        </div>
-                        <div class="input-group">
-                            <span class="material-icons">tag</span>
-                            <input type="number" id="qtdProduto" step="1" required placeholder="Quantidade (Ex: 1)" value="1">
-                        </div>
+                        
+                        <!-- Lista Dinâmica de Produtos Avulsos -->
+                        <div id="listaProdutosAvulso" style="margin-bottom: 10px;"></div>
+                        
+                        <button type="button" class="btn-manage" style="width: 100%; margin-bottom: 15px; background: #e0e0e0; color: #333; justify-content: center;" onclick="adicionarLinhaProduto('avulso')">
+                            <span class="material-icons" style="font-size: 18px; margin-right: 5px;">add_circle</span> Inserir Mais Itens
+                        </button>
+
                         <div class="input-group">
                             <span class="material-icons">event</span>
                             <input type="date" id="dataProduto" required>
@@ -130,7 +130,7 @@
                     <form id="formDespesa">
                         <div class="input-group">
                             <span class="material-icons">receipt_long</span>
-                            <input type="text" id="descDespesa" required placeholder="Ex: Aluguel, Luz, Internet">
+                            <input type="text" id="descDespesa" required placeholder="Ex: Aluguel, Luz, Fornecedor">
                         </div>
                         <div class="input-group">
                             <span class="material-icons">money_off</span>
@@ -147,6 +147,19 @@
 
             <!-- TELA 5: EXTRATO / RELATÓRIO -->
             <section id="screen-relatorio" class="screen">
+                <div class="card" style="padding: 15px; margin-bottom: 15px; text-align: center; background: #e8f4fd;">
+                    <h3 style="font-size: 1rem; color: #2c3e50; margin-bottom: 10px;">Segurança dos Dados</h3>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn-primary" style="flex: 1; padding: 10px; font-size: 0.85rem; background: #2ecc71;" onclick="exportarBackup()">
+                            <span class="material-icons" style="font-size: 18px;">download</span> Salvar Backup
+                        </button>
+                        <button class="btn-primary" style="flex: 1; padding: 10px; font-size: 0.85rem; background: #34495e;" onclick="document.getElementById('importBackup').click()">
+                            <span class="material-icons" style="font-size: 18px;">upload</span> Importar
+                        </button>
+                    </div>
+                    <input type="file" id="importBackup" accept=".json" style="display: none;">
+                </div>
+
                 <div class="card header-relatorio">
                     <h2>Extrato do Mês</h2>
                     <div style="display: flex; gap: 10px; margin-bottom: 10px;">
@@ -159,7 +172,7 @@
                         <span class="material-icons">filter_list</span>
                         <select id="filtroTipo" class="input-month" style="flex:1;">
                             <option value="todos">Mostrar Tudo</option>
-                            <option value="servico">Apenas Clientes (Atendimentos)</option>
+                            <option value="servico">Apenas Clientes (Cortes)</option>
                             <option value="produto">Apenas Vendas Avulsas</option>
                             <option value="despesa">Apenas Despesas</option>
                         </select>
@@ -178,53 +191,23 @@
             <button class="nav-item" id="nav-relatorio" onclick="mudarAba('relatorio')"><span class="material-icons">list_alt</span><span>Extrato</span></button>
         </nav>
 
-        <!-- =================== MODAIS CORRIGIDOS =================== -->
+        <!-- =================== MODAIS =================== -->
         
-        <!-- Modal Clientes -->
-        <div id="modalClientes" class="modal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3>Clientes</h3>
-                    <button class="btn-close" onclick="fecharModal('modalClientes')"><span class="material-icons">close</span></button>
-                </div>
-                <div class="add-box flex-column" style="gap: 8px;">
-                    <input type="text" id="novoClienteNome" placeholder="Novo cliente">
-                    <button onclick="adicionarCliente()" class="btn-primary" style="padding: 10px;"><span class="material-icons">add</span> Salvar Cliente</button>
-                </div>
-                <div class="modal-list" id="listaClientesModal"></div>
-            </div>
-        </div>
+        <div id="modalClientes" class="modal"><div class="modal-content"><div class="modal-header"><h3>Clientes</h3><button class="btn-close" onclick="fecharModal('modalClientes')"><span class="material-icons">close</span></button></div><div class="add-box flex-column" style="gap: 8px;"><input type="text" id="novoClienteNome" placeholder="Novo cliente"><button onclick="adicionarCliente()" class="btn-primary" style="padding: 10px;"><span class="material-icons">add</span> Salvar Cliente</button></div><div class="modal-list" id="listaClientesModal"></div></div></div>
 
-        <!-- Modal Serviços -->
-        <div id="modalProcedimentos" class="modal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3>Serviços</h3>
-                    <button class="btn-close" onclick="fecharModal('modalProcedimentos')"><span class="material-icons">close</span></button>
-                </div>
-                <div class="add-box flex-column" style="gap: 8px;">
-                    <input type="text" id="novoProcNome" placeholder="Nome (Ex: Degradê)">
-                    <input type="number" id="novoProcValor" step="0.01" placeholder="Valor (R$)">
-                    <button onclick="adicionarProcedimento()" class="btn-primary" style="padding: 10px;"><span class="material-icons">add</span> Salvar Serviço</button>
-                </div>
-                <div class="modal-list" id="listaProcedimentosModal"></div>
-            </div>
-        </div>
+        <div id="modalProcedimentos" class="modal"><div class="modal-content"><div class="modal-header"><h3>Serviços</h3><button class="btn-close" onclick="fecharModal('modalProcedimentos')"><span class="material-icons">close</span></button></div><div class="add-box flex-column" style="gap: 8px;"><input type="text" id="novoProcNome" placeholder="Nome (Ex: Degradê)"><input type="number" id="novoProcValor" step="0.01" placeholder="Valor (R$)"><button onclick="adicionarProcedimento()" class="btn-primary" style="padding: 10px;"><span class="material-icons">add</span> Salvar Serviço</button></div><div class="modal-list" id="listaProcedimentosModal"></div></div></div>
 
-        <!-- Modal Estoque (Produtos) -->
-        <div id="modalEstoque" class="modal">
-            <div class="modal-content">
+        <div id="modalEstoque" class="modal"><div class="modal-content"><div class="modal-header"><h3>Estoque de Produtos</h3><button class="btn-close" onclick="fecharModal('modalEstoque')"><span class="material-icons">close</span></button></div><div class="add-box flex-column" style="gap: 8px;"><input type="text" id="novoEstNome" placeholder="Produto (Ex: Monster)"><input type="number" id="novoEstCusto" step="0.01" placeholder="Preço de Custo (R$)"><input type="number" id="novoEstVenda" step="0.01" placeholder="Preço de Venda (R$)"><button onclick="adicionarEstoque()" class="btn-primary" style="padding: 10px;"><span class="material-icons">add</span> Salvar Produto</button></div><div class="modal-list" id="listaEstoqueModal"></div></div></div>
+
+        <!-- Ranking de Clientes (Corrigido para não cortar) -->
+        <div id="modalFrequencia" class="modal">
+            <div class="modal-content" style="max-height: 90vh;">
                 <div class="modal-header">
-                    <h3>Estoque de Produtos</h3>
-                    <button class="btn-close" onclick="fecharModal('modalEstoque')"><span class="material-icons">close</span></button>
+                    <h3>Ranking de Clientes</h3>
+                    <button class="btn-close" onclick="fecharModal('modalFrequencia')"><span class="material-icons">close</span></button>
                 </div>
-                <div class="add-box flex-column" style="gap: 8px;">
-                    <input type="text" id="novoEstNome" placeholder="Produto (Ex: Monster)">
-                    <input type="number" id="novoEstCusto" step="0.01" placeholder="Preço de Custo (R$)">
-                    <input type="number" id="novoEstVenda" step="0.01" placeholder="Preço de Venda (R$)">
-                    <button onclick="adicionarEstoque()" class="btn-primary" style="padding: 10px;"><span class="material-icons">add</span> Salvar Produto</button>
-                </div>
-                <div class="modal-list" id="listaEstoqueModal"></div>
+                <p style="font-size: 0.85rem; color: #777; margin-bottom: 15px;">Os clientes que mais visitaram a loja.</p>
+                <div class="modal-list modal-lista-espacada" id="listaFrequenciaModal"></div>
             </div>
         </div>
 
