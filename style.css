@@ -1,6 +1,6 @@
 /* =========================================
    Gestão Pro - Folha de Estilos (style.css)
-   100% Completo e Atualizado
+   100% Completo e Corrigido (Alinhamento de Produtos)
    ========================================= */
 
 /* Reset e Configurações Globais Mobile */
@@ -231,44 +231,54 @@ input, select {
     cursor: pointer; 
 }
 
-/* Estilos para Múltiplos Produtos na mesma venda */
+/* ==================================================
+   CORREÇÃO: Alinhamento de Múltiplos Produtos
+   ================================================== */
 .produto-row { 
     display: flex; 
-    gap: 8px; 
+    gap: 5px; /* Reduzido o espaço para caber melhor na tela */
     margin-bottom: 10px; 
     align-items: center; 
+    width: 100%; /* Garante que não ultrapasse a tela */
 }
 
 .produto-row select { 
-    flex: 2; 
+    flex: 3; /* Ocupa a maior parte */
+    min-width: 0; /* ESSENCIAL: Permite que o campo encolha sem quebrar o layout */
     background: #fff; 
     border-radius: 8px; 
-    padding: 10px; 
+    padding: 12px 5px; /* Padding menor nas laterais */
     border: 1px solid #ccc; 
     outline: none; 
+    font-size: 0.9rem; /* Fonte um pouco menor para economizar espaço */
+    text-overflow: ellipsis; /* Coloca reticências se o nome for gigante */
 }
 
 .produto-row input { 
     flex: 1; 
+    min-width: 0; /* Permite encolher */
     background: #fff; 
     border-radius: 8px; 
-    padding: 10px; 
+    padding: 12px 5px; 
     border: 1px solid #ccc; 
     outline: none; 
     text-align: center; 
+    font-size: 0.9rem;
 }
 
 .btn-remove-row { 
+    flex-shrink: 0; /* Impede o botão de ser esmagado pelo select */
     background: #e74c3c; 
     color: white; 
     border: none; 
     border-radius: 8px; 
-    padding: 8px; 
+    padding: 10px; 
     display: flex; 
     align-items: center; 
     justify-content: center; 
     cursor: pointer; 
 }
+/* ================================================== */
 
 /* Lista de Extrato / Relatório */
 .filtro-mes { 
