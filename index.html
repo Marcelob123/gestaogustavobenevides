@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#6200ea">
     <link rel="manifest" href="manifest.json">
-    <title>Gestão Pro</title>
+    <title>Gestão Benevides</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
@@ -15,7 +15,7 @@
 <body>
     <div id="app-container">
         <header class="app-header">
-            <h1>Gestão Pro</h1>
+            <h1>Gestão Benevides</h1>
         </header>
 
         <main class="app-content">
@@ -208,7 +208,6 @@
 
         <div id="modalProcedimentos" class="modal"><div class="modal-content"><div class="modal-header"><h3>Gerenciar Serviços</h3><button class="btn-close" onclick="fecharModal('modalProcedimentos')"><span class="material-icons">close</span></button></div><div class="add-box flex-column" style="gap: 8px;"><input type="text" id="novoProcNome" placeholder="Nome do Serviço (Ex: Degradê)"><input type="number" id="novoProcValor" step="0.01" placeholder="Valor (R$)"><button onclick="adicionarProcedimento()" class="btn-primary" style="padding: 10px;"><span class="material-icons">add</span> Salvar Serviço</button></div><div class="modal-list modal-lista-espacada" id="listaProcedimentosModal"></div></div></div>
 
-        <!-- Modal de Estoque Atualizado com Quantidade -->
         <div id="modalEstoque" class="modal"><div class="modal-content"><div class="modal-header"><h3>Cadastrar no Estoque</h3><button class="btn-close" onclick="fecharModal('modalEstoque')"><span class="material-icons">close</span></button></div><div class="add-box flex-column" style="gap: 8px;"><input type="text" id="novoEstNome" placeholder="Produto (Ex: Monster)"><input type="number" id="novoEstQtd" step="1" placeholder="Quantidade Comprada (Ex: 12)"><input type="number" id="novoEstCusto" step="0.01" placeholder="Preço de Custo Unidade (R$)"><input type="number" id="novoEstVenda" step="0.01" placeholder="Preço de Venda Unidade (R$)"><button onclick="adicionarEstoque()" class="btn-primary" style="padding: 10px;"><span class="material-icons">add</span> Salvar no Estoque</button></div><div class="modal-list modal-lista-espacada" id="listaEstoqueModal"></div></div></div>
 
         <div id="modalFrequencia" class="modal">
@@ -223,6 +222,19 @@
         </div>
 
     </div>
+    
+    <!-- Script que ativa o instalador do Chrome -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').then(reg => {
+                    console.log('Service Worker registrado!', reg);
+                }).catch(err => {
+                    console.log('Falha ao registrar Service Worker', err);
+                });
+            });
+        }
+    </script>
     <script src="script.js"></script>
 </body>
 </html>
