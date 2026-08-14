@@ -92,7 +92,7 @@ function atualizarDashboardInicio() {
 
     document.getElementById('textoRelatorioMensal').innerHTML = `
         Seu negócio gerou <strong>R$ ${receitaServicos.toFixed(2).replace('.', ',')}</strong> em serviços e <strong>R$ ${receitaProdutos.toFixed(2).replace('.', ',')}</strong> em vendas. O lucro líquido real é de <strong>R$ ${lucroLiquido.toFixed(2).replace('.', ',')}</strong>.<br><br>
-        <em>Para controle oficial, registre esses valores no seu sistema <strong>Finanças Benevides</strong>.</em>`;
+        <em>Para controle oficial, registre esses valores na planilha <strong>Finanças Benevides</strong>.</em>`;
 }
 
 // === GERENCIAR MODAIS E CADASTROS ===
@@ -250,7 +250,6 @@ formServico.addEventListener('submit', (e) => {
     const valorServ = parseFloat(document.getElementById('valorServico').value) || 0;
     const produtosComprados = coletarProdutosDaLista('listaProdutosServico');
     
-    // Verifica disponibilidade no estoque
     for(let p of produtosComprados) {
         const estoqueItem = estoque.find(es => es.id === p.id);
         if(estoqueItem && estoqueItem.quantidade < p.qtd) {
@@ -265,7 +264,6 @@ formServico.addEventListener('submit', (e) => {
         produtos: produtosComprados, valorTotal: valorServ
     };
 
-    // Dá baixa no estoque e soma o total
     registro.produtos.forEach(p => {
         registro.valorTotal += (p.venda * p.qtd);
         const estoqueItem = estoque.find(es => es.id === p.id);
@@ -285,7 +283,6 @@ formProduto.addEventListener('submit', (e) => {
     const produtosComprados = coletarProdutosDaLista('listaProdutosAvulso');
     if(produtosComprados.length === 0) return alert('Adicione pelo menos um produto!');
 
-    // Verifica disponibilidade no estoque
     for(let p of produtosComprados) {
         const estoqueItem = estoque.find(es => es.id === p.id);
         if(estoqueItem && estoqueItem.quantidade < p.qtd) {
@@ -505,7 +502,7 @@ function apagarRegistro(tipo, id) {
                     if(estoqueItem) estoqueItem.quantidade += p.qtd;
                 });
             } else {
-                const estoqueItem = estoque.find(es => es.nome === venda.nome); // Legacy search
+                const estoqueItem = estoque.find(es => es.nome === venda.nome);
                 if(estoqueItem) estoqueItem.quantidade += (venda.qtd || 1);
             }
         }
