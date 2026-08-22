@@ -1,9 +1,9 @@
 // Bancos de Dados Locais
 let clientes = JSON.parse(localStorage.getItem('clientesApp')) || [];
+clientes = clientes.map(c => ({...c, classificacao: c.classificacao || 'Bom'}));
+
 let procedimentos = JSON.parse(localStorage.getItem('procedimentosApp')) || [];
 let estoque = JSON.parse(localStorage.getItem('estoqueApp')) || []; 
-
-// Migração: Garante que os itens de estoque tenham a propriedade quantidade
 estoque = estoque.map(e => ({...e, quantidade: e.quantidade !== undefined ? e.quantidade : 0}));
 
 let servicosRealizados = JSON.parse(localStorage.getItem('servicosRealizadosApp')) || [];
@@ -13,7 +13,6 @@ if(registrosAntigos.length > 0 && servicosRealizados.length === 0) { servicosRea
 let vendasProdutos = JSON.parse(localStorage.getItem('vendasProdutosApp')) || [];
 let despesas = JSON.parse(localStorage.getItem('despesasApp')) || [];
 
-// Elementos Globais
 const formServico = document.getElementById('formServico');
 const formProduto = document.getElementById('formProduto');
 const formDespesa = document.getElementById('formDespesa');
@@ -41,10 +40,13 @@ function mudarAba(aba) {
     if(aba === 'relatorio') atualizarRelatorioLista();
 }
 
-// === MATEMÁTICA DO DASHBOARD ===
+// === MATEMÁTICA DO DASHBOARD E CONTADOR DE CLIENTES ===
 function atualizarDashboardInicio() {
     const mes = mesFiltro.value || new Date().toISOString().slice(0, 7);
     
+    document.getElementById('dashQtdClientesGeral').textContent = clientes.length;
+    document.getElementById('btnQtdClientesCortes').textContent = clientes.length;
+
     const servicosMes = servicosRealizados.filter(s => s.data && s.data.startsWith(mes));
     const produtosMes = vendasProdutos.filter(p => p.data && p.data.startsWith(mes));
     const despesasMes = despesas.filter(d => d.data && d.data.startsWith(mes));
@@ -92,7 +94,7 @@ function atualizarDashboardInicio() {
 
     document.getElementById('textoRelatorioMensal').innerHTML = `
         Seu negócio gerou <strong>R$ ${receitaServicos.toFixed(2).replace('.', ',')}</strong> em serviços e <strong>R$ ${receitaProdutos.toFixed(2).replace('.', ',')}</strong> em vendas. O lucro líquido real é de <strong>R$ ${lucroLiquido.toFixed(2).replace('.', ',')}</strong>.<br><br>
-        <em>Para controle oficial, registre esses valores na planilha <strong>Finanças Benevides</strong>.</em>`;
+        <em>Relatório oficial para lançamento na planilha <strong>Finanças Benevides</strong>.</em>`;
 }
 
 // === GERENCIAR MODAIS E CADASTROS ===
@@ -100,13 +102,15 @@ function abrirModal(id) {
     document.getElementById(id).classList.add('active'); 
     renderizarModais(); 
     if(id === 'modalFrequencia') renderizarClientesFrequentes(); 
+    if(id === 'modalResumoDiario') atualizarVisaoCaixa(); 
+    if(id === 'modalAvaliacaoClientes') renderizarAvaliacaoClientes();
 }
 function fecharModal(id) { document.getElementById(id).classList.remove('active'); atualizarSelects(); }
 function salvarDados(chave, dados) { localStorage.setItem(chave, JSON.stringify(dados)); }
 
 function adicionarCliente() {
     const nome = document.getElementById('novoClienteNome').value.trim();
-    if(nome) { clientes.push({ id: Date.now(), nome }); salvarDados('clientesApp', clientes); renderizarModais(); }
+    if(nome) { clientes.push({ id: Date.now(), nome: nome, classificacao: 'Bom' }); salvarDados('clientesApp', clientes); renderizarModais(); atualizarDashboardInicio();}
     document.getElementById('novoClienteNome').value = '';
 }
 function adicionarProcedimento() {
@@ -120,56 +124,30 @@ function adicionarEstoque() {
     const qtd = parseInt(document.getElementById('novoEstQtd').value) || 0;
     const custo = parseFloat(document.getElementById('novoEstCusto').value);
     const venda = parseFloat(document.getElementById('novoEstVenda').value);
-    
-    if(nome && custo && venda) { 
-        estoque.push({ id: Date.now(), nome, custo, venda, quantidade: qtd }); 
-        salvarDados('estoqueApp', estoque); 
-        renderizarModais(); 
-    }
-    
-    document.getElementById('novoEstNome').value = ''; 
-    document.getElementById('novoEstQtd').value = '';
-    document.getElementById('novoEstCusto').value = ''; 
-    document.getElementById('novoEstVenda').value = '';
+    if(nome && custo && venda) { estoque.push({ id: Date.now(), nome, custo, venda, quantidade: qtd }); salvarDados('estoqueApp', estoque); renderizarModais(); }
+    document.getElementById('novoEstNome').value = ''; document.getElementById('novoEstQtd').value = ''; document.getElementById('novoEstCusto').value = ''; document.getElementById('novoEstVenda').value = '';
 }
 
 function editarCliente(id) {
-    const item = clientes.find(c => c.id === id);
-    const novoNome = prompt('Editar nome do cliente:', item.nome);
-    if(novoNome !== null && novoNome.trim() !== '') {
-        item.nome = novoNome.trim(); salvarDados('clientesApp', clientes); renderizarModais();
-    }
+    const item = clientes.find(c => c.id === id); const novoNome = prompt('Editar nome do cliente:', item.nome);
+    if(novoNome !== null && novoNome.trim() !== '') { item.nome = novoNome.trim(); salvarDados('clientesApp', clientes); renderizarModais(); }
 }
 function editarProcedimento(id) {
-    const item = procedimentos.find(p => p.id === id);
-    const novoNome = prompt('Editar nome do serviço:', item.nome);
-    if(novoNome === null) return;
-    const novoValor = prompt('Editar valor (R$):', item.valor);
-    if(novoValor === null) return;
-    item.nome = novoNome.trim() || item.nome; item.valor = parseFloat(novoValor.replace(',', '.')) || item.valor;
-    salvarDados('procedimentosApp', procedimentos); renderizarModais();
+    const item = procedimentos.find(p => p.id === id); const novoNome = prompt('Editar nome do serviço:', item.nome); if(novoNome === null) return;
+    const novoValor = prompt('Editar valor (R$):', item.valor); if(novoValor === null) return;
+    item.nome = novoNome.trim() || item.nome; item.valor = parseFloat(novoValor.replace(',', '.')) || item.valor; salvarDados('procedimentosApp', procedimentos); renderizarModais();
 }
 function editarEstoque(id) {
-    const item = estoque.find(e => e.id === id);
-    const novoNome = prompt('Editar Produto:', item.nome);
-    if(novoNome === null) return;
-    const novaQtd = prompt('Editar Quantidade em Estoque:', item.quantidade);
-    if(novaQtd === null) return;
-    const novoCusto = prompt('Editar Preço de Custo (R$):', item.custo);
-    if(novoCusto === null) return;
-    const novoVenda = prompt('Editar Preço de Venda (R$):', item.venda);
-    if(novoVenda === null) return;
-    
-    item.nome = novoNome.trim() || item.nome;
-    item.quantidade = parseInt(novaQtd) || 0;
-    item.custo = parseFloat(novoCusto.replace(',', '.')) || item.custo;
-    item.venda = parseFloat(novoVenda.replace(',', '.')) || item.venda;
-    salvarDados('estoqueApp', estoque); renderizarModais();
+    const item = estoque.find(e => e.id === id); const novoNome = prompt('Editar Produto:', item.nome); if(novoNome === null) return;
+    const novaQtd = prompt('Editar Quantidade em Estoque:', item.quantidade); if(novaQtd === null) return;
+    const novoCusto = prompt('Editar Preço de Custo (R$):', item.custo); if(novoCusto === null) return;
+    const novoVenda = prompt('Editar Preço de Venda (R$):', item.venda); if(novoVenda === null) return;
+    item.nome = novoNome.trim() || item.nome; item.quantidade = parseInt(novaQtd) || 0; item.custo = parseFloat(novoCusto.replace(',', '.')) || item.custo; item.venda = parseFloat(novoVenda.replace(',', '.')) || item.venda; salvarDados('estoqueApp', estoque); renderizarModais();
 }
 
 function excluirItem(tipo, id) {
     if(!confirm('Excluir permanentemente?')) return;
-    if(tipo === 'cliente') { clientes = clientes.filter(i => i.id !== id); salvarDados('clientesApp', clientes); }
+    if(tipo === 'cliente') { clientes = clientes.filter(i => i.id !== id); salvarDados('clientesApp', clientes); atualizarDashboardInicio();}
     if(tipo === 'proc') { procedimentos = procedimentos.filter(i => i.id !== id); salvarDados('procedimentosApp', procedimentos); }
     if(tipo === 'est') { estoque = estoque.filter(i => i.id !== id); salvarDados('estoqueApp', estoque); }
     renderizarModais();
@@ -178,39 +156,54 @@ function excluirItem(tipo, id) {
 function renderizarModais() {
     document.getElementById('listaClientesModal').innerHTML = clientes.map(c => `<div class="modal-list-item"><span>${c.nome}</span><div class="modal-actions"><button class="btn-edit" onclick="editarCliente(${c.id})"><span class="material-icons">edit</span></button><button class="btn-delete" onclick="excluirItem('cliente', ${c.id})"><span class="material-icons">delete</span></button></div></div>`).join('');
     document.getElementById('listaProcedimentosModal').innerHTML = procedimentos.map(p => `<div class="modal-list-item"><div><span>${p.nome}</span><span class="detalhe">R$ ${(p.valor||0).toFixed(2)}</span></div><div class="modal-actions"><button class="btn-edit" onclick="editarProcedimento(${p.id})"><span class="material-icons">edit</span></button><button class="btn-delete" onclick="excluirItem('proc', ${p.id})"><span class="material-icons">delete</span></button></div></div>`).join('');
-    
     document.getElementById('listaEstoqueModal').innerHTML = estoque.map(e => {
-        const alertaEstoque = e.quantidade <= 0 ? `<span style="color:#e74c3c; font-weight:bold;"> (Esgotado)</span>` : ``;
-        return `
-        <div class="modal-list-item">
-            <div>
-                <span>${e.nome}</span>
-                <span class="detalhe">Custo: R$ ${(e.custo||0).toFixed(2)} | Venda: R$ ${(e.venda||0).toFixed(2)} | Qtd: ${e.quantidade} ${alertaEstoque}</span>
-            </div>
-            <div class="modal-actions">
-                <button class="btn-edit" onclick="editarEstoque(${e.id})"><span class="material-icons">edit</span></button>
-                <button class="btn-delete" onclick="excluirItem('est', ${e.id})"><span class="material-icons">delete</span></button>
-            </div>
-        </div>`;
+        const alerta = e.quantidade <= 0 ? `<span style="color:#e74c3c; font-weight:bold;"> (Esgotado)</span>` : ``;
+        return `<div class="modal-list-item"><div><span>${e.nome}</span><span class="detalhe">Custo: R$ ${(e.custo||0).toFixed(2)} | Venda: R$ ${(e.venda||0).toFixed(2)} | Qtd: ${e.quantidade} ${alerta}</span></div><div class="modal-actions"><button class="btn-edit" onclick="editarEstoque(${e.id})"><span class="material-icons">edit</span></button><button class="btn-delete" onclick="excluirItem('est', ${e.id})"><span class="material-icons">delete</span></button></div></div>`;
     }).join('');
+}
+
+// === NOVO: AVALIAÇÃO E CLASSIFICAÇÃO DE CLIENTES ===
+function renderizarAvaliacaoClientes() {
+    const lista = document.getElementById('listaAvaliacaoClientesModal'); lista.innerHTML = '';
+    const visitasMap = {};
+    servicosRealizados.forEach(s => { if(s.cliente) visitasMap[s.cliente] = (visitasMap[s.cliente] || 0) + 1; });
+
+    if(clientes.length === 0) { lista.innerHTML = '<p style="text-align:center; padding:15px; color:#777;">Nenhum cliente cadastrado.</p>'; return; }
+
+    clientes.forEach(c => {
+        const numVisitas = visitasMap[c.nome] || 0;
+        let classeCor = 'tag-bom'; let iconeStr = '🟢 Bom';
+        if(c.classificacao === 'Regular') { classeCor = 'tag-regular'; iconeStr = '🟡 Regular'; }
+        else if(c.classificacao === 'Ruim') { classeCor = 'tag-ruim'; iconeStr = '🔴 Ruim'; }
+
+        lista.innerHTML += `
+            <div class="modal-list-item" style="align-items: center;">
+                <div style="flex:1;">
+                    <strong style="color: #2c3e50; font-size: 1rem;">${c.nome}</strong>
+                    <span style="font-size: 0.8rem; color: #6c757d; display:block;">Cortes/Visitas: ${numVisitas}</span>
+                </div>
+                <div onclick="alternarClassificacao(${c.id})" class="tag-classificacao ${classeCor}">${iconeStr}</div>
+            </div>`;
+    });
+}
+
+function alternarClassificacao(id) {
+    const cliente = clientes.find(c => c.id === id); if(!cliente) return;
+    if(!cliente.classificacao || cliente.classificacao === 'Bom') { cliente.classificacao = 'Regular'; } 
+    else if(cliente.classificacao === 'Regular') { cliente.classificacao = 'Ruim'; } 
+    else { cliente.classificacao = 'Bom'; }
+    salvarDados('clientesApp', clientes); renderizarAvaliacaoClientes();
 }
 
 // === SISTEMA DE MULTIPLOS PRODUTOS ===
 function getOpcoesProdutosHtml() {
-    return '<option value="" disabled selected>Selecione um Produto</option>' + estoque.map(e => {
-        const txtEstoque = e.quantidade <= 0 ? ' [ESGOTADO]' : ` [Estoque: ${e.quantidade}]`;
-        return `<option value="${e.id}">${e.nome} (R$ ${(e.venda||0).toFixed(2)})${txtEstoque}</option>`;
-    }).join('');
+    return '<option value="" disabled selected>Selecione um Produto</option>' + estoque.map(e => `<option value="${e.id}">${e.nome} (R$ ${(e.venda||0).toFixed(2)})${e.quantidade <= 0 ? ' [ESGOTADO]' : ` [Estoque: ${e.quantidade}]`}</option>`).join('');
 }
 
 function atualizarSelects() {
     document.getElementById('clienteSelect').innerHTML = '<option value="" disabled selected>Selecione o Cliente</option>' + clientes.map(c => `<option value="${c.nome}">${c.nome}</option>`).join('');
     document.getElementById('procedimentoSelect').innerHTML = '<option value="" disabled selected>Selecione o Serviço</option>' + procedimentos.map(p => `<option value="${p.nome}" data-valor="${p.valor}">${p.nome}</option>`).join('');
-    
-    const optionsProd = getOpcoesProdutosHtml();
-    document.querySelectorAll('.prod-select-dinamico').forEach(select => {
-        const val = select.value; select.innerHTML = optionsProd; select.value = val;
-    });
+    const optionsProd = getOpcoesProdutosHtml(); document.querySelectorAll('.prod-select-dinamico').forEach(s => { const val = s.value; s.innerHTML = optionsProd; s.value = val; });
 }
 
 function preencherValorProcedimento() {
@@ -225,298 +218,216 @@ function adicionarLinhaProduto(tipo) {
     container.appendChild(div);
 }
 
-function resetarFormulariosProdutos() {
-    document.getElementById('listaProdutosServico').innerHTML = '';
-    document.getElementById('listaProdutosAvulso').innerHTML = '';
-    adicionarLinhaProduto('avulso'); 
-}
+function resetarFormulariosProdutos() { document.getElementById('listaProdutosServico').innerHTML = ''; document.getElementById('listaProdutosAvulso').innerHTML = ''; adicionarLinhaProduto('avulso'); }
 
 function coletarProdutosDaLista(idContainer) {
     const lista = [];
     document.getElementById(idContainer).querySelectorAll('.produto-row').forEach(row => {
-        const idProd = parseInt(row.querySelector('.prod-select-dinamico').value);
-        const qtd = parseInt(row.querySelector('.prod-qtd-dinamico').value) || 1;
-        if(idProd) {
-            const prod = estoque.find(p => p.id === idProd);
-            if(prod) lista.push({ id: prod.id, nome: prod.nome, custo: prod.custo, venda: prod.venda, qtd: qtd });
-        }
+        const idProd = parseInt(row.querySelector('.prod-select-dinamico').value); const qtd = parseInt(row.querySelector('.prod-qtd-dinamico').value) || 1;
+        if(idProd) { const prod = estoque.find(p => p.id === idProd); if(prod) lista.push({ id: prod.id, nome: prod.nome, custo: prod.custo, venda: prod.venda, qtd: qtd }); }
     });
     return lista;
 }
 
 // === REGISTROS E BAIXA NO ESTOQUE ===
 formServico.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const valorServ = parseFloat(document.getElementById('valorServico').value) || 0;
-    const produtosComprados = coletarProdutosDaLista('listaProdutosServico');
-    
+    e.preventDefault(); const valorServ = parseFloat(document.getElementById('valorServico').value) || 0; const produtosComprados = coletarProdutosDaLista('listaProdutosServico');
     for(let p of produtosComprados) {
-        const estoqueItem = estoque.find(es => es.id === p.id);
-        if(estoqueItem && estoqueItem.quantidade < p.qtd) {
-            if(!confirm(`Atenção: O produto ${estoqueItem.nome} ficará com estoque negativo. Deseja registrar mesmo assim?`)) return;
-        }
+        const est = estoque.find(es => es.id === p.id);
+        if(est && est.quantidade < p.qtd) if(!confirm(`Atenção: O produto ${est.nome} ficará com estoque negativo. Deseja registrar mesmo assim?`)) return;
     }
-
-    let registro = {
-        id: Date.now(), cliente: document.getElementById('clienteSelect').value,
-        procedimento: document.getElementById('procedimentoSelect').value,
-        valorServico: valorServ, data: document.getElementById('dataServico').value,
-        produtos: produtosComprados, valorTotal: valorServ
-    };
-
-    registro.produtos.forEach(p => {
-        registro.valorTotal += (p.venda * p.qtd);
-        const estoqueItem = estoque.find(es => es.id === p.id);
-        if(estoqueItem) estoqueItem.quantidade -= p.qtd;
-    });
-    
-    servicosRealizados.push(registro); 
-    salvarDados('servicosRealizadosApp', servicosRealizados);
-    salvarDados('estoqueApp', estoque);
-    
-    formServico.reset(); document.getElementById('dataServico').valueAsDate = new Date(); 
-    resetarFormulariosProdutos(); atualizarSelects(); feedbackSalvo(formServico.querySelector('.btn-primary'));
+    let registro = { id: Date.now(), cliente: document.getElementById('clienteSelect').value, procedimento: document.getElementById('procedimentoSelect').value, valorServico: valorServ, data: document.getElementById('dataServico').value, produtos: produtosComprados, valorTotal: valorServ };
+    registro.produtos.forEach(p => { registro.valorTotal += (p.venda * p.qtd); const est = estoque.find(es => es.id === p.id); if(est) est.quantidade -= p.qtd; });
+    servicosRealizados.push(registro); salvarDados('servicosRealizadosApp', servicosRealizados); salvarDados('estoqueApp', estoque);
+    formServico.reset(); document.getElementById('dataServico').valueAsDate = new Date(); resetarFormulariosProdutos(); atualizarSelects(); feedbackSalvo(formServico.querySelector('.btn-primary'));
 });
 
 formProduto.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const produtosComprados = coletarProdutosDaLista('listaProdutosAvulso');
-    if(produtosComprados.length === 0) return alert('Adicione pelo menos um produto!');
-
+    e.preventDefault(); const produtosComprados = coletarProdutosDaLista('listaProdutosAvulso'); if(produtosComprados.length === 0) return alert('Adicione pelo menos um produto!');
     for(let p of produtosComprados) {
-        const estoqueItem = estoque.find(es => es.id === p.id);
-        if(estoqueItem && estoqueItem.quantidade < p.qtd) {
-            if(!confirm(`Atenção: O produto ${estoqueItem.nome} ficará com estoque negativo. Deseja registrar mesmo assim?`)) return;
-        }
+        const est = estoque.find(es => es.id === p.id);
+        if(est && est.quantidade < p.qtd) if(!confirm(`Atenção: O produto ${est.nome} ficará com estoque negativo. Deseja registrar mesmo assim?`)) return;
     }
-
-    let valorTotalVenda = 0; 
-    produtosComprados.forEach(p => {
-        valorTotalVenda += (p.venda * p.qtd);
-        const estoqueItem = estoque.find(es => es.id === p.id);
-        if(estoqueItem) estoqueItem.quantidade -= p.qtd;
-    });
-
+    let valorTotalVenda = 0; produtosComprados.forEach(p => { valorTotalVenda += (p.venda * p.qtd); const est = estoque.find(es => es.id === p.id); if(est) est.quantidade -= p.qtd; });
     vendasProdutos.push({ id: Date.now(), data: document.getElementById('dataProduto').value, produtos: produtosComprados, valorTotal: valorTotalVenda });
-    salvarDados('vendasProdutosApp', vendasProdutos);
-    salvarDados('estoqueApp', estoque);
-    
-    formProduto.reset(); document.getElementById('dataProduto').valueAsDate = new Date(); 
-    resetarFormulariosProdutos(); atualizarSelects(); feedbackSalvo(formProduto.querySelector('.btn-primary'));
+    salvarDados('vendasProdutosApp', vendasProdutos); salvarDados('estoqueApp', estoque);
+    formProduto.reset(); document.getElementById('dataProduto').valueAsDate = new Date(); resetarFormulariosProdutos(); atualizarSelects(); feedbackSalvo(formProduto.querySelector('.btn-primary'));
 });
 
 formDespesa.addEventListener('submit', (e) => {
-    e.preventDefault();
-    despesas.push({ id: Date.now(), desc: document.getElementById('descDespesa').value, valor: (parseFloat(document.getElementById('valorDespesa').value) || 0), data: document.getElementById('dataDespesa').value });
-    salvarDados('despesasApp', despesas);
-    formDespesa.reset(); document.getElementById('dataDespesa').valueAsDate = new Date(); feedbackSalvo(formDespesa.querySelector('.btn-primary'));
+    e.preventDefault(); despesas.push({ id: Date.now(), desc: document.getElementById('descDespesa').value, valor: (parseFloat(document.getElementById('valorDespesa').value) || 0), data: document.getElementById('dataDespesa').value });
+    salvarDados('despesasApp', despesas); formDespesa.reset(); document.getElementById('dataDespesa').valueAsDate = new Date(); feedbackSalvo(formDespesa.querySelector('.btn-primary'));
 });
 
 function feedbackSalvo(btn) {
-    const txt = btn.innerHTML; const bg = btn.style.backgroundColor;
-    btn.innerHTML = '<span class="material-icons">done_all</span> Salvo!'; btn.style.backgroundColor = '#27ae60';
+    const txt = btn.innerHTML; const bg = btn.style.backgroundColor; btn.innerHTML = '<span class="material-icons">done_all</span> Salvo!'; btn.style.backgroundColor = '#27ae60';
     setTimeout(() => { btn.innerHTML = txt; btn.style.backgroundColor = bg; mudarAba('inicio'); }, 800);
 }
 
-// === EXPORTAR PDF E WHATSAPP ===
-function gerarPDF() {
-    window.print();
-}
-
-function enviarWhatsApp() {
-    atualizarDashboardInicio(); 
+// === VISÃO DE CAIXA (COM FILTROS) ===
+function atualizarVisaoCaixa() {
+    const filtro = document.getElementById('filtroTempoCaixa').value;
+    const container = document.getElementById('conteudoVisaoCaixa');
+    const dataAtual = new Date();
+    const hojeStr = dataAtual.toISOString().slice(0, 10);
     
-    const mes = document.getElementById('mesFiltro').value;
-    const lucro = document.getElementById('dashLucroLiquido').innerText;
-    const recServicos = document.getElementById('dashReceitaServicos').innerText;
-    const recProdutos = document.getElementById('dashReceitaProdutos').innerText;
-    const despesasVal = document.getElementById('dashDespesas').innerText;
-    const custoProd = document.getElementById('dashCustoProdutos').innerText;
-    const lucroProd = document.getElementById('dashLucroProdutos').innerText;
+    let strStart = hojeStr; let strEnd = hojeStr; let titulo = "Hoje";
 
-    let texto = `*FECHAMENTO DO MÊS (${mes.split('-').reverse().join('/')})* ✂️📊\n\n`;
-    texto += `*✂️ SERVIÇOS (CORTES)*\n`;
-    texto += `Faturamento: ${recServicos}\n\n`;
-    texto += `*🛒 PRODUTOS (BEBIDAS/OUTROS)*\n`;
-    texto += `Faturamento: ${recProdutos}\n`;
-    texto += `Custo: ${custoProd}\n`;
-    texto += `Lucro Líquido Produtos: *${lucroProd}*\n\n`;
-    texto += `*📉 DESPESAS DA LOJA*\n`;
-    texto += `Total Saídas: ${despesasVal}\n\n`;
-    texto += `*💰 LUCRO LÍQUIDO GERAL:* ${lucro}\n\n`;
-    texto += `_Lembre-se de registrar estes totais na sua planilha Finanças Benevides!_`;
+    if (filtro === 'semana') {
+        const diaDaSemana = dataAtual.getDay(); 
+        const dataInicio = new Date(dataAtual); dataInicio.setDate(dataAtual.getDate() - diaDaSemana);
+        const dataFim = new Date(dataInicio); dataFim.setDate(dataInicio.getDate() + 6);
+        strStart = dataInicio.toISOString().slice(0, 10); strEnd = dataFim.toISOString().slice(0, 10);
+        titulo = "Esta Semana";
+    } else if (filtro === 'mes') {
+        strStart = hojeStr.slice(0, 7) + '-01';
+        const anoMes = hojeStr.slice(0, 7).split('-'); const ultimoDia = new Date(anoMes[0], anoMes[1], 0).getDate();
+        strEnd = hojeStr.slice(0, 7) + '-' + ultimoDia; titulo = "Este Mês";
+    }
 
-    const url = `https://wa.me/?text=${encodeURIComponent(texto)}`;
-    window.open(url, '_blank');
-}
-
-// === CLIENTES FREQUENTES ===
-function renderizarClientesFrequentes() {
-    const lista = document.getElementById('listaFrequenciaModal'); lista.innerHTML = '';
-    const contagem = {};
+    let entradasServicos = 0, entradasProdutos = 0, custosProdutos = 0, saidasDespesas = 0;
 
     servicosRealizados.forEach(s => {
-        if(!s.cliente) return;
-        if(!contagem[s.cliente]) contagem[s.cliente] = { nome: s.cliente, visitas: 0, gastoTotal: 0, ultimaVisita: s.data };
-        
-        contagem[s.cliente].visitas += 1;
-        contagem[s.cliente].gastoTotal += (parseFloat(s.valorTotal) || parseFloat(s.valor) || 0);
-        if (new Date(s.data) > new Date(contagem[s.cliente].ultimaVisita)) contagem[s.cliente].ultimaVisita = s.data;
+        if (s.data >= strStart && s.data <= strEnd) {
+            entradasServicos += (parseFloat(s.valorServico) || parseFloat(s.valor) || 0); 
+            if(s.produtos && s.produtos.length > 0) {
+                s.produtos.forEach(prod => { entradasProdutos += (parseFloat(prod.venda) * parseInt(prod.qtd)); custosProdutos += (parseFloat(prod.custo) * parseInt(prod.qtd)); });
+            } else if(s.produtoId) {
+                entradasProdutos += ((parseFloat(s.produtoVenda)||0) * (parseInt(s.produtoQtd)||1)); custosProdutos += ((parseFloat(s.produtoCusto)||0) * (parseInt(s.produtoQtd)||1));
+            }
+        }
     });
 
+    vendasProdutos.forEach(p => {
+        if (p.data >= strStart && p.data <= strEnd) {
+            if(p.produtos && p.produtos.length > 0) { 
+                p.produtos.forEach(prod => { entradasProdutos += (parseFloat(prod.venda) * parseInt(prod.qtd)); custosProdutos += (parseFloat(prod.custo) * parseInt(prod.qtd)); });
+            } else { 
+                entradasProdutos += ((parseFloat(p.venda)||0) * (parseInt(p.qtd)||1)); custosProdutos += ((parseFloat(p.custo)||0) * (parseInt(p.qtd)||1));
+            }
+        }
+    });
+
+    despesas.forEach(d => { if (d.data >= strStart && d.data <= strEnd) saidasDespesas += (parseFloat(d.valor) || 0); });
+
+    const entradas = entradasServicos + entradasProdutos; const saidas = saidasDespesas + custosProdutos; const saldo = entradas - saidas;
+
+    container.innerHTML = `
+        <div style="background: #f1f3f5; padding: 15px; border-radius: 12px; border-left: 5px solid #3498db; margin-bottom: 10px;">
+            <h4 style="color: #2c3e50; margin-bottom: 10px;">${titulo} (${strStart.split('-').reverse().join('/')} até ${strEnd.split('-').reverse().join('/')})</h4>
+            <div style="display:flex; justify-content: space-between; font-size: 0.95rem; margin-bottom: 5px;"><span>Entradas Totais:</span> <span style="color:#27ae60; font-weight:bold;">+ R$ ${entradas.toFixed(2).replace('.',',')}</span></div>
+            <div style="display:flex; justify-content: space-between; font-size: 0.95rem; margin-bottom: 5px;"><span>Custos / Despesas:</span> <span style="color:#e74c3c; font-weight:bold;">- R$ ${saidas.toFixed(2).replace('.',',')}</span></div>
+            <hr style="margin: 10px 0; border: 0; border-top: 1px solid #ccc;">
+            <div style="display:flex; justify-content: space-between; font-size: 1.1rem; font-weight:bold;"><span>Lucro Líquido:</span> <span style="color:${saldo >= 0 ? '#27ae60' : '#e74c3c'};">R$ ${saldo.toFixed(2).replace('.',',')}</span></div>
+        </div>`;
+    window.caixaAtual = { titulo, strStart, strEnd, entradas, saidas, saldo };
+}
+
+function enviarWhatsAppCaixa() {
+    if(!window.caixaAtual) return;
+    const { titulo, strStart, strEnd, entradas, saidas, saldo } = window.caixaAtual;
+    let texto = `*VISÃO RÁPIDA DE CAIXA - Gestão Benevides* 📊\n`;
+    texto += `*Período:* ${titulo} (${strStart.split('-').reverse().join('/')} até ${strEnd.split('-').reverse().join('/')})\n\n`;
+    texto += `*Entradas Totais:* R$ ${entradas.toFixed(2).replace('.',',')}\n`;
+    texto += `*Saídas (Despesas/Custos):* R$ ${saidas.toFixed(2).replace('.',',')}\n\n`;
+    texto += `*💰 SALDO LÍQUIDO:* R$ ${saldo.toFixed(2).replace('.',',')}\n\n`;
+    texto += `_Relatório para lançamento na planilha Finanças Benevides._`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, '_blank');
+}
+
+// === EXPORTAR PDF E WHATSAPP (MENSAL COMPLETO) ===
+function gerarPDF() { window.print(); }
+function enviarWhatsApp() {
+    atualizarDashboardInicio(); 
+    const mes = document.getElementById('mesFiltro').value; const lucro = document.getElementById('dashLucroLiquido').innerText;
+    const recServicos = document.getElementById('dashReceitaServicos').innerText; const recProdutos = document.getElementById('dashReceitaProdutos').innerText;
+    const despesasVal = document.getElementById('dashDespesas').innerText; const custoProd = document.getElementById('dashCustoProdutos').innerText; const lucroProd = document.getElementById('dashLucroProdutos').innerText;
+    let texto = `*FECHAMENTO DO MÊS (${mes.split('-').reverse().join('/')})* ✂️📊\n\n*✂️ SERVIÇOS (CORTES)*\nFaturamento: ${recServicos}\n\n*🛒 PRODUTOS (BEBIDAS/OUTROS)*\nFaturamento: ${recProdutos}\nCusto: ${custoProd}\nLucro Líquido Produtos: *${lucroProd}*\n\n*📉 DESPESAS DA LOJA*\nTotal Saídas: ${despesasVal}\n\n*💰 LUCRO LÍQUIDO GERAL:* ${lucro}\n\n_Lembre-se de registrar estes totais na planilha Finanças Benevides!_`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, '_blank');
+}
+
+// === RANKING CLIENTES FREQUENTES ===
+function renderizarClientesFrequentes() {
+    const lista = document.getElementById('listaFrequenciaModal'); lista.innerHTML = ''; const contagem = {};
+    servicosRealizados.forEach(s => {
+        if(!s.cliente) return; if(!contagem[s.cliente]) contagem[s.cliente] = { nome: s.cliente, visitas: 0, gastoTotal: 0, ultimaVisita: s.data };
+        contagem[s.cliente].visitas += 1; contagem[s.cliente].gastoTotal += (parseFloat(s.valorTotal) || parseFloat(s.valor) || 0);
+        if (new Date(s.data) > new Date(contagem[s.cliente].ultimaVisita)) contagem[s.cliente].ultimaVisita = s.data;
+    });
     const topClientes = Object.values(contagem).sort((a, b) => b.visitas - a.visitas);
     if(topClientes.length === 0) { lista.innerHTML = '<p style="text-align:center; padding:15px; color:#777;">Nenhum atendimento registrado.</p>'; return; }
-
     topClientes.forEach((c, index) => {
         const medalha = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '👤';
         const dataFmt = c.ultimaVisita ? c.ultimaVisita.split('-').reverse().join('/') : '--/--/----';
-        lista.innerHTML += `
-            <div class="modal-list-item" style="flex-direction: column; align-items: flex-start; gap: 5px; border-left: 4px solid #f39c12;">
-                <div style="display: flex; justify-content: space-between; width: 100%;">
-                    <strong style="color: #2c3e50; font-size: 1.05rem;">${medalha} ${c.nome}</strong>
-                    <span style="color: #6200ea; font-weight: bold; font-size: 0.95rem;">${c.visitas} visitas</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; width: 100%; font-size: 0.85rem; color: #6c757d;">
-                    <span>Gasto: R$ ${c.gastoTotal.toFixed(2).replace('.',',')}</span>
-                    <span>Última vez: ${dataFmt}</span>
-                </div>
-            </div>`;
+        lista.innerHTML += `<div class="modal-list-item" style="flex-direction: column; align-items: flex-start; gap: 5px; border-left: 4px solid #f39c12;"><div style="display: flex; justify-content: space-between; width: 100%;"><strong style="color: #2c3e50; font-size: 1.05rem;">${medalha} ${c.nome}</strong><span style="color: #6200ea; font-weight: bold; font-size: 0.95rem;">${c.visitas} visitas</span></div><div style="display: flex; justify-content: space-between; width: 100%; font-size: 0.85rem; color: #6c757d;"><span>Gasto: R$ ${c.gastoTotal.toFixed(2).replace('.',',')}</span><span>Última vez: ${dataFmt}</span></div></div>`;
     });
 }
 
 // === BACKUP E RESTAURAÇÃO ===
 function exportarBackup() {
     const backup = { clientes, procedimentos, estoque, servicosRealizados, vendasProdutos, despesas };
-    const a = document.createElement('a');
-    a.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backup));
-    a.download = "backup_gestao_benevides.json";
-    document.body.appendChild(a); a.click(); a.remove();
+    const a = document.createElement('a'); a.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backup));
+    a.download = "backup_gestao_benevides.json"; document.body.appendChild(a); a.click(); a.remove();
 }
-
 document.getElementById('importBackup').addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
+    const file = e.target.files[0]; if (!file) return; const reader = new FileReader();
     reader.onload = function(ev) {
         try {
             const data = JSON.parse(ev.target.result);
             if (data.clientes !== undefined) {
-                localStorage.setItem('clientesApp', JSON.stringify(data.clientes));
-                localStorage.setItem('procedimentosApp', JSON.stringify(data.procedimentos));
-                localStorage.setItem('estoqueApp', JSON.stringify(data.estoque));
-                localStorage.setItem('servicosRealizadosApp', JSON.stringify(data.servicosRealizados));
-                localStorage.setItem('vendasProdutosApp', JSON.stringify(data.vendasProdutos));
-                localStorage.setItem('despesasApp', JSON.stringify(data.despesas));
+                localStorage.setItem('clientesApp', JSON.stringify(data.clientes)); localStorage.setItem('procedimentosApp', JSON.stringify(data.procedimentos)); localStorage.setItem('estoqueApp', JSON.stringify(data.estoque));
+                localStorage.setItem('servicosRealizadosApp', JSON.stringify(data.servicosRealizados)); localStorage.setItem('vendasProdutosApp', JSON.stringify(data.vendasProdutos)); localStorage.setItem('despesasApp', JSON.stringify(data.despesas));
                 alert('Backup restaurado!'); location.reload(); 
             }
         } catch (err) { alert('Arquivo inválido.'); }
-    };
-    reader.readAsText(file);
+    }; reader.readAsText(file);
 });
 
 // === EXTRATO GERAL E ESTORNO DE ESTOQUE ===
-mesFiltro.addEventListener('change', atualizarRelatorioLista);
-filtroTipo.addEventListener('change', atualizarRelatorioLista);
-
+mesFiltro.addEventListener('change', atualizarRelatorioLista); filtroTipo.addEventListener('change', atualizarRelatorioLista);
 function atualizarRelatorioLista() {
     const lista = document.getElementById('listaRelatorio'); lista.innerHTML = '';
-    const mes = mesFiltro.value; const tipoFiltro = filtroTipo.value;
-    let extrato = [];
-    
+    const mes = mesFiltro.value; const tipoFiltro = filtroTipo.value; let extrato = [];
     if (tipoFiltro === 'todos' || tipoFiltro === 'servico') servicosRealizados.filter(s => s.data && s.data.startsWith(mes)).forEach(s => extrato.push({...s, tipo: 'servico'}));
     if (tipoFiltro === 'todos' || tipoFiltro === 'produto') vendasProdutos.filter(p => p.data && p.data.startsWith(mes)).forEach(p => extrato.push({...p, tipo: 'produto'}));
     if (tipoFiltro === 'todos' || tipoFiltro === 'despesa') despesas.filter(d => d.data && d.data.startsWith(mes)).forEach(d => extrato.push({...d, tipo: 'despesa'}));
-    
     extrato.sort((a, b) => new Date(b.data) - new Date(a.data));
     if(extrato.length === 0) { lista.innerHTML = '<p style="text-align:center; padding: 20px;">Sem movimentação correspondente.</p>'; return; }
-
     extrato.forEach(item => {
         const dataFmt = item.data.split('-').reverse().join('/');
-        
         if(item.tipo === 'servico') {
-            const valServico = parseFloat(item.valorServico) || parseFloat(item.valor) || 0;
-            const valTotal = parseFloat(item.valorTotal) || parseFloat(item.valor) || 0;
-
-            let linhaProd = '';
-            if(item.produtos && item.produtos.length > 0) {
-                linhaProd = item.produtos.map(p => `<p class="produto-adicional"><span class="material-icons">local_drink</span> + ${p.qtd}x ${p.nome} (R$ ${(p.venda * p.qtd).toFixed(2).replace('.',',')})</p>`).join('');
-            } else if(item.produtoId) {
-                linhaProd = `<p class="produto-adicional"><span class="material-icons">local_drink</span> + ${item.produtoQtd}x ${item.produtoNome} (R$ ${(item.produtoVenda * item.produtoQtd).toFixed(2).replace('.',',')})</p>`;
-            }
-
-            lista.innerHTML += `
-                <div class="registro-item tipo-servico">
-                    <div class="registro-info"><h4>${item.cliente}</h4><p><span class="material-icons">content_cut</span> ${item.procedimento} (R$ ${valServico.toFixed(2).replace('.',',')})</p>
-                    ${linhaProd}<p><span class="material-icons">event</span> ${dataFmt}</p></div>
-                    <div class="registro-valor"><span>+ R$ ${valTotal.toFixed(2).replace('.',',')}</span><button class="btn-delete" onclick="apagarRegistro('servico', ${item.id})"><span class="material-icons">delete</span></button></div>
-                </div>`;
-                
+            const valServico = parseFloat(item.valorServico) || parseFloat(item.valor) || 0; const valTotal = parseFloat(item.valorTotal) || parseFloat(item.valor) || 0; let linhaProd = '';
+            if(item.produtos && item.produtos.length > 0) { linhaProd = item.produtos.map(p => `<p class="produto-adicional"><span class="material-icons">local_drink</span> + ${p.qtd}x ${p.nome} (R$ ${(p.venda * p.qtd).toFixed(2).replace('.',',')})</p>`).join(''); } 
+            else if(item.produtoId) { linhaProd = `<p class="produto-adicional"><span class="material-icons">local_drink</span> + ${item.produtoQtd}x ${item.produtoNome} (R$ ${(item.produtoVenda * item.produtoQtd).toFixed(2).replace('.',',')})</p>`; }
+            lista.innerHTML += `<div class="registro-item tipo-servico"><div class="registro-info"><h4>${item.cliente}</h4><p><span class="material-icons">content_cut</span> ${item.procedimento} (R$ ${valServico.toFixed(2).replace('.',',')})</p>${linhaProd}<p><span class="material-icons">event</span> ${dataFmt}</p></div><div class="registro-valor"><span>+ R$ ${valTotal.toFixed(2).replace('.',',')}</span><button class="btn-delete" onclick="apagarRegistro('servico', ${item.id})"><span class="material-icons">delete</span></button></div></div>`;
         } else if(item.tipo === 'produto') {
             let descProdutos = '', total = item.valorTotal || 0;
-            if(item.produtos && item.produtos.length > 0) {
-                descProdutos = item.produtos.map(p => `<p class="produto-adicional"><span class="material-icons">shopping_bag</span> ${p.qtd}x ${p.nome}</p>`).join('');
-            } else {
-                descProdutos = `<p class="produto-adicional"><span class="material-icons">shopping_bag</span> ${item.qtd}x ${item.nome}</p>`;
-                total = (parseFloat(item.venda)||0) * (parseInt(item.qtd)||1);
-            }
-            
-            lista.innerHTML += `
-                <div class="registro-item tipo-produto">
-                    <div class="registro-info"><h4>Venda Avulsa</h4>${descProdutos}<p><span class="material-icons">event</span> ${dataFmt}</p></div>
-                    <div class="registro-valor"><span>+ R$ ${total.toFixed(2).replace('.',',')}</span><button class="btn-delete" onclick="apagarRegistro('produto', ${item.id})"><span class="material-icons">delete</span></button></div>
-                </div>`;
-            
+            if(item.produtos && item.produtos.length > 0) { descProdutos = item.produtos.map(p => `<p class="produto-adicional"><span class="material-icons">shopping_bag</span> ${p.qtd}x ${p.nome}</p>`).join(''); } 
+            else { descProdutos = `<p class="produto-adicional"><span class="material-icons">shopping_bag</span> ${item.qtd}x ${item.nome}</p>`; total = (parseFloat(item.venda)||0) * (parseInt(item.qtd)||1); }
+            lista.innerHTML += `<div class="registro-item tipo-produto"><div class="registro-info"><h4>Venda Avulsa</h4>${descProdutos}<p><span class="material-icons">event</span> ${dataFmt}</p></div><div class="registro-valor"><span>+ R$ ${total.toFixed(2).replace('.',',')}</span><button class="btn-delete" onclick="apagarRegistro('produto', ${item.id})"><span class="material-icons">delete</span></button></div></div>`;
         } else if(item.tipo === 'despesa') {
             lista.innerHTML += `<div class="registro-item tipo-despesa"><div class="registro-info"><h4>Despesa</h4><p><span class="material-icons">receipt_long</span> ${item.desc}</p><p><span class="material-icons">event</span> ${dataFmt}</p></div><div class="registro-valor"><span>- R$ ${(parseFloat(item.valor)||0).toFixed(2).replace('.',',')}</span><button class="btn-delete" onclick="apagarRegistro('despesa', ${item.id})"><span class="material-icons">delete</span></button></div></div>`;
         }
     });
 }
-
 function apagarRegistro(tipo, id) {
     if(!confirm('Deseja excluir do histórico? (Isso devolverá o produto ao estoque)')) return;
-    
     if(tipo === 'servico') { 
         const servico = servicosRealizados.find(i => i.id === id);
         if(servico) {
-            if(servico.produtos) {
-                servico.produtos.forEach(p => {
-                    const estoqueItem = estoque.find(es => es.id === p.id);
-                    if(estoqueItem) estoqueItem.quantidade += p.qtd;
-                });
-            } else if(servico.produtoId) {
-                const estoqueItem = estoque.find(es => es.id === servico.produtoId);
-                if(estoqueItem) estoqueItem.quantidade += (servico.produtoQtd || 1);
-            }
+            if(servico.produtos) { servico.produtos.forEach(p => { const est = estoque.find(es => es.id === p.id); if(est) est.quantidade += p.qtd; }); } 
+            else if(servico.produtoId) { const est = estoque.find(es => es.id === servico.produtoId); if(est) est.quantidade += (servico.produtoQtd || 1); }
         }
-        servicosRealizados = servicosRealizados.filter(i => i.id !== id); 
-        salvarDados('servicosRealizadosApp', servicosRealizados); 
-        salvarDados('estoqueApp', estoque);
+        servicosRealizados = servicosRealizados.filter(i => i.id !== id); salvarDados('servicosRealizadosApp', servicosRealizados); salvarDados('estoqueApp', estoque);
     }
-    
     if(tipo === 'produto') { 
         const venda = vendasProdutos.find(i => i.id === id);
         if(venda) {
-            if(venda.produtos) {
-                venda.produtos.forEach(p => {
-                    const estoqueItem = estoque.find(es => es.id === p.id);
-                    if(estoqueItem) estoqueItem.quantidade += p.qtd;
-                });
-            } else {
-                const estoqueItem = estoque.find(es => es.nome === venda.nome);
-                if(estoqueItem) estoqueItem.quantidade += (venda.qtd || 1);
-            }
+            if(venda.produtos) { venda.produtos.forEach(p => { const est = estoque.find(es => es.id === p.id); if(est) est.quantidade += p.qtd; }); } 
+            else { const est = estoque.find(es => es.nome === venda.nome); if(est) est.quantidade += (venda.qtd || 1); }
         }
-        vendasProdutos = vendasProdutos.filter(i => i.id !== id); 
-        salvarDados('vendasProdutosApp', vendasProdutos); 
-        salvarDados('estoqueApp', estoque);
+        vendasProdutos = vendasProdutos.filter(i => i.id !== id); salvarDados('vendasProdutosApp', vendasProdutos); salvarDados('estoqueApp', estoque);
     }
-    
-    if(tipo === 'despesa') { 
-        despesas = despesas.filter(i => i.id !== id); 
-        salvarDados('despesasApp', despesas); 
-    }
-    
-    atualizarSelects();
-    atualizarRelatorioLista(); 
-    atualizarDashboardInicio();
+    if(tipo === 'despesa') { despesas = despesas.filter(i => i.id !== id); salvarDados('despesasApp', despesas); }
+    atualizarSelects(); atualizarRelatorioLista(); atualizarDashboardInicio();
 }
