@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#6200ea">
+    <meta name="theme-color" content="#4F46E5">
     <link rel="manifest" href="manifest.json">
     <title>Gestão Benevides</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
@@ -19,29 +19,44 @@
         </header>
 
         <main class="app-content">
-            
-            <!-- TELA 1: INÍCIO (DASHBOARD) -->
+            <!-- ABA 1: INÍCIO -->
             <section id="screen-inicio" class="screen active">
-                
-                <button class="btn-primary" style="margin-bottom: 15px; background-color: #3498db; color: #fff; box-shadow: 0 4px 10px rgba(52, 152, 219, 0.3);" onclick="abrirModal('modalResumoDiario')">
-                    <span class="material-icons">point_of_sale</span> Visão Rápida do Caixa
-                </button>
-
-                <!-- Contador de Clientes -->
-                <div class="card" style="padding: 15px; text-align: center; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid #6200ea;">
-                    <div style="text-align: left;">
-                        <p style="font-size: 0.85rem; color: #6c757d; font-weight: 600; text-transform: uppercase;">Total de Clientes</p>
-                        <h3 style="color: #2c3e50; font-size: 1.5rem;" id="dashQtdClientesGeral">0</h3>
-                    </div>
-                    <span class="material-icons" style="font-size: 32px; color: #6200ea; opacity: 0.8;">groups</span>
+                <div class="action-buttons-top">
+                    <button class="btn-top-action" onclick="abrirModal('modalResumoDiario')">
+                        <span class="material-icons">point_of_sale</span> Caixa Rápido
+                    </button>
+                    <button class="btn-top-action" onclick="abrirModal('modalFrequencia')">
+                        <span class="material-icons">star</span> Top Clientes
+                    </button>
                 </div>
 
-                <div class="card total-box" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); margin-bottom: 15px;">
+                <div class="dashboard-stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon icon-indigo">
+                            <span class="material-icons">groups</span>
+                        </div>
+                        <div class="stat-info">
+                            <p>Total Clientes</p>
+                            <h3 id="dashQtdClientesGeral">0</h3>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon icon-emerald">
+                            <span class="material-icons">person_check</span>
+                        </div>
+                        <div class="stat-info">
+                            <p>Atendidos Hoje</p>
+                            <h3 id="dashQtdClientesHoje">0</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card total-box">
                     <p>Lucro Líquido do Mês</p>
                     <h3 id="dashLucroLiquido">R$ 0,00</h3>
                 </div>
 
-                <div class="card resumo-financeiro" style="margin-bottom: 15px;">
+                <div class="card resumo-financeiro">
                     <h2>Detalhamento do Mês</h2>
                     <div class="linha-resumo positiva">
                         <span>Serviços (Cortes)</span>
@@ -72,129 +87,131 @@
                 </div>
             </section>
 
-            <!-- TELA 2: SERVIÇOS -->
+            <!-- ABA 2: CORTES (GRADE 4 ITENS) -->
             <section id="screen-servicos" class="screen">
-                <button class="btn-primary" style="margin-bottom: 20px; background-color: #8e44ad; color: #fff; box-shadow: 0 4px 10px rgba(142, 68, 173, 0.3);" onclick="abrirModal('modalAvaliacaoClientes')">
-                    <span class="material-icons">recent_actors</span> Base de Clientes (<span id="btnQtdClientesCortes">0</span>)
-                </button>
-
-                <div class="card">
-                    <h2>Registrar Atendimento</h2>
-                    <form id="formServico">
-                        <div class="input-group">
-                            <span class="material-icons">person</span>
-                            <select id="clienteSelect" required><option value="" disabled selected>Selecione o Cliente</option></select>
-                            <button type="button" class="btn-manage" onclick="abrirModal('modalClientes')"><span class="material-icons">settings</span></button>
-                        </div>
-                        <div class="input-group">
-                            <span class="material-icons">content_cut</span>
-                            <select id="procedimentoSelect" required onchange="preencherValorProcedimento()"><option value="" disabled selected>Selecione o Serviço</option></select>
-                            <button type="button" class="btn-manage" onclick="abrirModal('modalProcedimentos')"><span class="material-icons">settings</span></button>
-                        </div>
-                        <div class="input-group">
-                            <span class="material-icons">attach_money</span>
-                            <input type="number" id="valorServico" step="0.01" required placeholder="Valor do Serviço (R$)">
-                        </div>
-                        
-                        <div style="background: #f8f9fa; padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px dashed #ccc;">
-                            <h3 style="font-size: 0.95rem; color:#2c3e50; margin-bottom: 10px;">Adicionar Produtos (Opcional)</h3>
-                            <div id="listaProdutosServico"></div>
-                            <button type="button" class="btn-manage" style="width: 100%; margin: 0; background: #e0e0e0; color: #333; justify-content: center;" onclick="adicionarLinhaProduto('servico')">
-                                <span class="material-icons" style="font-size: 18px; margin-right: 5px;">add_circle</span> Inserir Produto
-                            </button>
-                        </div>
-
-                        <div class="input-group">
-                            <span class="material-icons">event</span>
-                            <input type="date" id="dataServico" required>
-                        </div>
-                        <button type="submit" class="btn-primary"><span class="material-icons">check_circle</span> Salvar Atendimento</button>
-                    </form>
+                <div class="page-title-box">
+                    <h2>Painel de Atendimentos</h2>
+                    <p>Selecione uma ação rápida</p>
+                </div>
+                <div class="grid-quadrados">
+                    <div class="card-quadrado" onclick="abrirModal('modalRegistrarCorte')">
+                        <span class="material-icons icon-quadrado color-purple">add_circle</span>
+                        <h4>Novo Corte</h4>
+                        <p>Lançar atendimento</p>
+                    </div>
+                    <div class="card-quadrado" onclick="abrirModal('modalAvaliacaoClientes')">
+                        <span class="material-icons icon-quadrado color-blue">groups</span>
+                        <h4>Clientes (<span id="btnQtdClientesCortes">0</span>)</h4>
+                        <p>Classificar e listar</p>
+                    </div>
+                    <div class="card-quadrado" onclick="abrirModal('modalProcedimentos')">
+                        <span class="material-icons icon-quadrado color-green">content_cut</span>
+                        <h4>Serviços</h4>
+                        <p>Preços e procedimentos</p>
+                    </div>
+                    <div class="card-quadrado" onclick="abrirModal('modalClientes')">
+                        <span class="material-icons icon-quadrado color-amber">person_add</span>
+                        <h4>Cadastrar</h4>
+                        <p>Adicionar cliente</p>
+                    </div>
                 </div>
             </section>
 
-            <!-- TELA 3: PRODUTOS (VENDA AVULSA E ESTOQUE) -->
+            <!-- ABA 3: PRODUTOS (GRADE 4 ITENS) -->
             <section id="screen-produtos" class="screen">
-                <button class="btn-primary" style="margin-bottom: 20px; background-color: #27ae60; color: #fff; border-radius: 12px; box-shadow: 0 4px 10px rgba(39, 174, 96, 0.3);" onclick="abrirModal('modalEstoque')">
-                    <span class="material-icons">inventory_2</span> Gerenciar Estoque (Comprar)
-                </button>
-                <div class="card">
-                    <h2>Venda Avulsa (Balcão)</h2>
-                    <p style="font-size:0.8rem; color:#777; margin-bottom:15px;">Para clientes que só compraram produto (sem cortar cabelo).</p>
-                    <form id="formProduto">
-                        <div id="listaProdutosAvulso" style="margin-bottom: 10px;"></div>
-                        <button type="button" class="btn-manage" style="width: 100%; margin-bottom: 15px; background: #e0e0e0; color: #333; justify-content: center;" onclick="adicionarLinhaProduto('avulso')">
-                            <span class="material-icons" style="font-size: 18px; margin-right: 5px;">add_circle</span> Adicionar Mais Produtos na Venda
-                        </button>
-                        <div class="input-group">
-                            <span class="material-icons">event</span>
-                            <input type="date" id="dataProduto" required>
-                        </div>
-                        <button type="submit" class="btn-primary" style="background-color: #2980b9;"><span class="material-icons">shopping_cart</span> Registrar Venda</button>
-                    </form>
+                <div class="page-title-box">
+                    <h2>Gestão de Produtos</h2>
+                    <p>Vendas e reposição de itens</p>
+                </div>
+                <div class="grid-quadrados">
+                    <div class="card-quadrado" onclick="abrirModal('modalVendaBalcao')">
+                        <span class="material-icons icon-quadrado color-blue">point_of_sale</span>
+                        <h4>Venda Balcão</h4>
+                        <p>Saída avulsa</p>
+                    </div>
+                    <div class="card-quadrado" onclick="abrirModal('modalEstoque')">
+                        <span class="material-icons icon-quadrado color-green">inventory_2</span>
+                        <h4>Estoque</h4>
+                        <p>Entradas e lista</p>
+                    </div>
+                    <div class="card-quadrado" onclick="abrirModal('modalFiltroProdutos')">
+                        <span class="material-icons icon-quadrado color-amber">local_drink</span>
+                        <h4>Bebidas</h4>
+                        <p>Consultar itens</p>
+                    </div>
+                    <div class="card-quadrado" onclick="abrirModal('modalResumoDiario')">
+                        <span class="material-icons icon-quadrado color-purple">analytics</span>
+                        <h4>Vendas Mês</h4>
+                        <p>Lucro em produtos</p>
+                    </div>
                 </div>
             </section>
 
-            <!-- TELA 4: DESPESAS -->
+            <!-- ABA 4: DESPESAS (GRADE 4 ITENS) -->
             <section id="screen-despesas" class="screen">
-                <div class="card">
-                    <h2>Lançar Despesa</h2>
-                    <form id="formDespesa">
-                        <div class="input-group">
-                            <span class="material-icons">receipt_long</span>
-                            <input type="text" id="descDespesa" required placeholder="Ex: Aluguel, Luz, Fornecedor">
-                        </div>
-                        <div class="input-group">
-                            <span class="material-icons">money_off</span>
-                            <input type="number" id="valorDespesa" step="0.01" required placeholder="Valor Pago (R$)">
-                        </div>
-                        <div class="input-group">
-                            <span class="material-icons">event</span>
-                            <input type="date" id="dataDespesa" required>
-                        </div>
-                        <button type="submit" class="btn-primary" style="background-color: #e74c3c;"><span class="material-icons">remove_circle</span> Registrar Saída</button>
-                    </form>
+                <div class="page-title-box">
+                    <h2>Despesas da Barbearia</h2>
+                    <p>Controle de custos fixos e variáveis</p>
+                </div>
+                <div class="grid-quadrados">
+                    <div class="card-quadrado" onclick="abrirModal('modalNovaDespesa')">
+                        <span class="material-icons icon-quadrado color-red">add_card</span>
+                        <h4>Lançar Saída</h4>
+                        <p>Cadastrar conta/gasto</p>
+                    </div>
+                    <div class="card-quadrado" onclick="filtrarExtratoRapido('despesa')">
+                        <span class="material-icons icon-quadrado color-amber">receipt_long</span>
+                        <h4>Ver Despesas</h4>
+                        <p>Extrato detalhado</p>
+                    </div>
+                    <div class="card-quadrado" onclick="abrirModal('modalDespesaFixa')">
+                        <span class="material-icons icon-quadrado color-blue">home_work</span>
+                        <h4>Fixas / Loja</h4>
+                        <p>Aluguel, Luz, Internet</p>
+                    </div>
+                    <div class="card-quadrado" onclick="abrirModal('modalResumoDiario')">
+                        <span class="material-icons icon-quadrado color-green">savings</span>
+                        <h4>Impacto</h4>
+                        <p>Total gasto no mês</p>
+                    </div>
                 </div>
             </section>
 
-            <!-- TELA 5: EXTRATO / RELATÓRIO -->
+            <!-- ABA 5: EXTRATO -->
             <section id="screen-relatorio" class="screen">
-                <div class="card acoes-extrato" style="padding: 15px; margin-bottom: 15px; background: #fff;">
-                    <h3 style="font-size: 1rem; color: #2c3e50; margin-bottom: 10px; text-align: center;">Exportar Fechamento do Mês</h3>
-                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                        <button class="btn-primary" style="flex: 1; padding: 10px; font-size: 0.85rem; background: #25D366;" onclick="enviarWhatsApp()">
-                            <span class="material-icons" style="font-size: 18px;">whatsapp</span> WhatsApp
+                <div class="card acoes-extrato">
+                    <h3 style="font-size: 1rem; color: var(--text-main); margin-bottom: 12px; text-align: center; font-weight: 700;">Fechamento de Caixa</h3>
+                    <div class="dual-btn-row">
+                        <button class="btn-clean-action bg-wpp" onclick="enviarWhatsApp()">
+                            <span class="material-icons">whatsapp</span> WhatsApp
                         </button>
-                        <button class="btn-primary" style="flex: 1; padding: 10px; font-size: 0.85rem; background: #e74c3c;" onclick="gerarPDF()">
-                            <span class="material-icons" style="font-size: 18px;">picture_as_pdf</span> Salvar PDF
+                        <button class="btn-clean-action bg-pdf" onclick="gerarPDF()">
+                            <span class="material-icons">picture_as_pdf</span> PDF
                         </button>
                     </div>
-                    <hr style="margin: 15px 0;">
-                    <div style="display: flex; gap: 10px;">
-                        <button class="btn-primary" style="flex: 1; padding: 10px; font-size: 0.8rem; background: #2ecc71;" onclick="exportarBackup()">
-                            <span class="material-icons" style="font-size: 16px;">download</span> Salvar Backup
+                    <div class="dual-btn-row">
+                        <button class="btn-clean-action" onclick="exportarBackup()">
+                            <span class="material-icons">download</span> Backup
                         </button>
-                        <button class="btn-primary" style="flex: 1; padding: 10px; font-size: 0.8rem; background: #34495e;" onclick="document.getElementById('importBackup').click()">
-                            <span class="material-icons" style="font-size: 16px;">upload</span> Restaurar
+                        <button class="btn-clean-action" onclick="document.getElementById('importBackup').click()">
+                            <span class="material-icons">upload</span> Restaurar
                         </button>
                     </div>
                     <input type="file" id="importBackup" accept=".json" style="display: none;">
                 </div>
 
                 <div class="card header-relatorio">
-                    <h2>Histórico de Movimentações</h2>
-                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                        <div class="filtro-mes" style="flex: 1;">
-                            <span class="material-icons">calendar_month</span>
-                            <input type="month" id="mesFiltro" class="input-month">
-                        </div>
+                    <h2>Movimentações do Mês</h2>
+                    <div class="filtro-mes">
+                        <span class="material-icons">calendar_month</span>
+                        <input type="month" id="mesFiltro" class="input-month">
                     </div>
-                    <div class="filtro-mes acoes-extrato">
+                    <div class="filtro-mes">
                         <span class="material-icons">filter_list</span>
-                        <select id="filtroTipo" class="input-month" style="flex:1;">
+                        <select id="filtroTipo" class="input-month">
                             <option value="todos">Mostrar Tudo</option>
-                            <option value="servico">Apenas Clientes (Cortes)</option>
-                            <option value="produto">Apenas Vendas Avulsas</option>
+                            <option value="servico">Apenas Cortes</option>
+                            <option value="produto">Apenas Produtos</option>
                             <option value="despesa">Apenas Despesas</option>
                         </select>
                     </div>
@@ -203,7 +220,7 @@
             </section>
         </main>
 
-        <!-- MENU INFERIOR -->
+        <!-- MENU INFERIOR FIXO -->
         <nav class="bottom-nav">
             <button class="nav-item active" id="nav-inicio" onclick="mudarAba('inicio')"><span class="material-icons">home</span><span>Início</span></button>
             <button class="nav-item" id="nav-servicos" onclick="mudarAba('servicos')"><span class="material-icons">content_cut</span><span>Cortes</span></button>
@@ -212,55 +229,219 @@
             <button class="nav-item" id="nav-relatorio" onclick="mudarAba('relatorio')"><span class="material-icons">list_alt</span><span>Extrato</span></button>
         </nav>
 
-        <!-- =================== MODAIS =================== -->
-        
+        <!-- =================== MODAIS / POP-UPS =================== -->
+
+        <!-- Modal Registrar Corte -->
+        <div id="modalRegistrarCorte" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Registrar Atendimento</h3>
+                    <button class="btn-close" onclick="fecharModal('modalRegistrarCorte')"><span class="material-icons">close</span></button>
+                </div>
+                <form id="formServico">
+                    <div class="input-group">
+                        <span class="material-icons">person</span>
+                        <select id="clienteSelect" required><option value="" disabled selected>Selecione o Cliente</option></select>
+                    </div>
+                    <div class="input-group">
+                        <span class="material-icons">content_cut</span>
+                        <select id="procedimentoSelect" required onchange="preencherValorProcedimento()"><option value="" disabled selected>Selecione o Serviço</option></select>
+                    </div>
+                    <div class="input-group">
+                        <span class="material-icons">attach_money</span>
+                        <input type="number" id="valorServico" step="0.01" required placeholder="Valor do Corte (R$)">
+                    </div>
+
+                    <div class="produtos-adicionais-box">
+                        <h3>Bebidas ou Produtos Consumidos</h3>
+                        <div id="listaProdutosServico"></div>
+                        <button type="button" class="btn-add-produto" onclick="adicionarLinhaProduto('servico')">
+                            <span class="material-icons">add_circle</span> Inserir Bebida/Item
+                        </button>
+                    </div>
+
+                    <div class="input-group">
+                        <span class="material-icons">event</span>
+                        <input type="date" id="dataServico" required>
+                    </div>
+                    <button type="submit" class="btn-primary"><span class="material-icons">check_circle</span> Salvar Atendimento</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal Venda Balcão -->
+        <div id="modalVendaBalcao" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Venda Balcão</h3>
+                    <button class="btn-close" onclick="fecharModal('modalVendaBalcao')"><span class="material-icons">close</span></button>
+                </div>
+                <form id="formProduto">
+                    <div id="listaProdutosAvulso" style="margin-bottom: 10px;"></div>
+                    <button type="button" class="btn-add-produto" style="margin-bottom: 15px;" onclick="adicionarLinhaProduto('avulso')">
+                        <span class="material-icons">add_circle</span> Adicionar Mais Produtos
+                    </button>
+                    <div class="input-group">
+                        <span class="material-icons">event</span>
+                        <input type="date" id="dataProduto" required>
+                    </div>
+                    <button type="submit" class="btn-primary" style="background: var(--blue);"><span class="material-icons">shopping_cart</span> Confirmar Venda</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal Nova Despesa -->
+        <div id="modalNovaDespesa" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Lançar Saída / Despesa</h3>
+                    <button class="btn-close" onclick="fecharModal('modalNovaDespesa')"><span class="material-icons">close</span></button>
+                </div>
+                <form id="formDespesa">
+                    <div class="input-group">
+                        <span class="material-icons">receipt_long</span>
+                        <input type="text" id="descDespesa" required placeholder="Descrição (Ex: Fornecedor, Café)">
+                    </div>
+                    <div class="input-group">
+                        <span class="material-icons">money_off</span>
+                        <input type="number" id="valorDespesa" step="0.01" required placeholder="Valor Pago (R$)">
+                    </div>
+                    <div class="input-group">
+                        <span class="material-icons">event</span>
+                        <input type="date" id="dataDespesa" required>
+                    </div>
+                    <button type="submit" class="btn-primary" style="background: var(--danger);"><span class="material-icons">remove_circle</span> Registrar Saída</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal Atalho Despesas Fixas -->
+        <div id="modalDespesaFixa" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Lançar Conta Fixa</h3>
+                    <button class="btn-close" onclick="fecharModal('modalDespesaFixa')"><span class="material-icons">close</span></button>
+                </div>
+                <div class="quick-chips">
+                    <button type="button" class="chip" onclick="preencherDespesaRapida('Aluguel')">Aluguel</button>
+                    <button type="button" class="chip" onclick="preencherDespesaRapida('Energia Elétrica')">Energia</button>
+                    <button type="button" class="chip" onclick="preencherDespesaRapida('Água / Saneamento')">Água</button>
+                    <button type="button" class="chip" onclick="preencherDespesaRapida('Internet / Wi-Fi')">Internet</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Visão de Caixa -->
         <div id="modalResumoDiario" class="modal">
-            <div class="modal-content" style="max-height: 90vh;">
+            <div class="modal-content">
                 <div class="modal-header">
                     <h3>Visão de Caixa</h3>
                     <button class="btn-close" onclick="fecharModal('modalResumoDiario')"><span class="material-icons">close</span></button>
                 </div>
-                <p style="font-size: 0.85rem; color: #777; margin-bottom: 10px;">Gere resumos parciais para entregar ou lançar no fechamento.</p>
                 <div class="input-group" style="margin-bottom: 15px;">
                     <span class="material-icons">date_range</span>
                     <select id="filtroTempoCaixa" class="input-month" onchange="atualizarVisaoCaixa()">
                         <option value="hoje">Hoje</option>
-                        <option value="semana">Esta Semana (Dom a Sáb)</option>
+                        <option value="semana">Esta Semana</option>
                         <option value="mes">Este Mês</option>
                     </select>
                 </div>
-                <div id="conteudoVisaoCaixa" class="modal-list modal-lista-espacada" style="padding-bottom: 0px !important;"></div>
-                <button class="btn-primary" style="margin-top: 15px; background-color: #25D366;" onclick="enviarWhatsAppCaixa()">
-                    <span class="material-icons">send</span> Enviar Fechamento Parcial
+                <div id="conteudoVisaoCaixa" class="modal-list"></div>
+                <button class="btn-primary" style="margin-top: 15px; background: var(--success);" onclick="enviarWhatsAppCaixa()">
+                    <span class="material-icons">send</span> Enviar Fechamento
                 </button>
             </div>
         </div>
 
+        <!-- Modal Avaliação de Clientes -->
         <div id="modalAvaliacaoClientes" class="modal">
-            <div class="modal-content" style="max-height: 90vh;">
+            <div class="modal-content">
                 <div class="modal-header">
                     <h3>Base de Clientes</h3>
                     <button class="btn-close" onclick="fecharModal('modalAvaliacaoClientes')"><span class="material-icons">close</span></button>
                 </div>
-                <p style="font-size: 0.85rem; color: #777; margin-bottom: 15px;">Toque na etiqueta de classificação para alternar entre Bom, Regular ou Ruim.</p>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 15px;">Toque na etiqueta para alternar o status do cliente.</p>
                 <div class="modal-list modal-lista-espacada" id="listaAvaliacaoClientesModal"></div>
             </div>
         </div>
 
-        <div id="modalClientes" class="modal"><div class="modal-content"><div class="modal-header"><h3>Gerenciar Clientes</h3><button class="btn-close" onclick="fecharModal('modalClientes')"><span class="material-icons">close</span></button></div><div class="add-box flex-column" style="gap: 8px;"><input type="text" id="novoClienteNome" placeholder="Nome do novo cliente"><button onclick="adicionarCliente()" class="btn-primary" style="padding: 10px;"><span class="material-icons">add</span> Salvar Cliente</button></div><div class="modal-list modal-lista-espacada" id="listaClientesModal"></div></div></div>
-        <div id="modalProcedimentos" class="modal"><div class="modal-content"><div class="modal-header"><h3>Gerenciar Serviços</h3><button class="btn-close" onclick="fecharModal('modalProcedimentos')"><span class="material-icons">close</span></button></div><div class="add-box flex-column" style="gap: 8px;"><input type="text" id="novoProcNome" placeholder="Nome do Serviço (Ex: Degradê)"><input type="number" id="novoProcValor" step="0.01" placeholder="Valor (R$)"><button onclick="adicionarProcedimento()" class="btn-primary" style="padding: 10px;"><span class="material-icons">add</span> Salvar Serviço</button></div><div class="modal-list modal-lista-espacada" id="listaProcedimentosModal"></div></div></div>
-        <div id="modalEstoque" class="modal"><div class="modal-content"><div class="modal-header"><h3>Cadastrar no Estoque</h3><button class="btn-close" onclick="fecharModal('modalEstoque')"><span class="material-icons">close</span></button></div><div class="add-box flex-column" style="gap: 8px;"><input type="text" id="novoEstNome" placeholder="Produto (Ex: Monster)"><input type="number" id="novoEstQtd" step="1" placeholder="Quantidade Comprada (Ex: 12)"><input type="number" id="novoEstCusto" step="0.01" placeholder="Preço de Custo Unidade (R$)"><input type="number" id="novoEstVenda" step="0.01" placeholder="Preço de Venda Unidade (R$)"><button onclick="adicionarEstoque()" class="btn-primary" style="padding: 10px;"><span class="material-icons">add</span> Salvar no Estoque</button></div><div class="modal-list modal-lista-espacada" id="listaEstoqueModal"></div></div></div>
+        <!-- Modal Cadastrar Cliente -->
+        <div id="modalClientes" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Cadastrar Novo Cliente</h3>
+                    <button class="btn-close" onclick="fecharModal('modalClientes')"><span class="material-icons">close</span></button>
+                </div>
+                <div class="add-box flex-column">
+                    <input type="text" id="novoClienteNome" placeholder="Nome completo do cliente">
+                    <button onclick="adicionarCliente()" class="btn-primary"><span class="material-icons">add</span> Salvar Cliente</button>
+                </div>
+                <div class="modal-list modal-lista-espacada" id="listaClientesModal"></div>
+            </div>
+        </div>
+
+        <!-- Modal Serviços / Procedimentos -->
+        <div id="modalProcedimentos" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Tabela de Cortes & Serviços</h3>
+                    <button class="btn-close" onclick="fecharModal('modalProcedimentos')"><span class="material-icons">close</span></button>
+                </div>
+                <div class="add-box flex-column">
+                    <input type="text" id="novoProcNome" placeholder="Nome do Serviço (Ex: Degradê + Barba)">
+                    <input type="number" id="novoProcValor" step="0.01" placeholder="Valor (R$)">
+                    <button onclick="adicionarProcedimento()" class="btn-primary"><span class="material-icons">add</span> Salvar Serviço</button>
+                </div>
+                <div class="modal-list modal-lista-espacada" id="listaProcedimentosModal"></div>
+            </div>
+        </div>
+
+        <!-- Modal Estoque -->
+        <div id="modalEstoque" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Gerenciar Estoque</h3>
+                    <button class="btn-close" onclick="fecharModal('modalEstoque')"><span class="material-icons">close</span></button>
+                </div>
+                <div class="add-box flex-column">
+                    <input type="text" id="novoEstNome" placeholder="Nome (Ex: Monster Energy, Pomada)">
+                    <input type="number" id="novoEstQtd" step="1" placeholder="Quantidade inicial">
+                    <input type="number" id="novoEstCusto" step="0.01" placeholder="Preço de Custo (R$)">
+                    <input type="number" id="novoEstVenda" step="0.01" placeholder="Preço de Venda (R$)">
+                    <button onclick="adicionarEstoque()" class="btn-primary"><span class="material-icons">add</span> Salvar no Estoque</button>
+                </div>
+                <div class="modal-list modal-lista-espacada" id="listaEstoqueModal"></div>
+            </div>
+        </div>
+
+        <!-- Modal Filtro Bebidas -->
+        <div id="modalFiltroProdutos" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Consulta de Produtos</h3>
+                    <button class="btn-close" onclick="fecharModal('modalFiltroProdutos')"><span class="material-icons">close</span></button>
+                </div>
+                <div class="modal-list modal-lista-espacada" id="listaConsultaProdutosModal"></div>
+            </div>
+        </div>
+
+        <!-- Modal Ranking Top Clientes -->
+        <div id="modalFrequencia" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Ranking de Clientes</h3>
+                    <button class="btn-close" onclick="fecharModal('modalFrequencia')"><span class="material-icons">close</span></button>
+                </div>
+                <div class="modal-list modal-lista-espacada" id="listaFrequenciaModal"></div>
+            </div>
+        </div>
 
     </div>
     
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js').then(reg => {
-                    console.log('Service Worker registrado!');
-                }).catch(err => {
-                    console.log('Falha ao registrar Service Worker');
-                });
+                navigator.serviceWorker.register('./sw.js').catch(() => {});
             });
         }
     </script>
